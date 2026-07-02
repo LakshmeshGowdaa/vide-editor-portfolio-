@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lakshmesh Gowda M S — Video Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Work+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0e2118;
+    --bg-mid:#173325;
+    --bg-mid-2:#1f4231;
+    --gold:#e3a63e;
+    --leaf:#8ab06a;
+    --cream:#f2ead6;
+    --bark:#2a1d14;
+    --mist: rgba(242,234,214,0.65);
+    --line: rgba(242,234,214,0.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg-deep);
+    color:var(--cream);
+    font-family:'Work Sans',sans-serif;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--gold);color:var(--bark);}
+
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--gold);
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--gold);display:inline-block;}
+
+  a{color:inherit;}
+
+  /* ---------- scroll reveal ---------- */
+  .reveal{opacity:0;transform:translateY(36px);transition:opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:translateY(0);}
+  .reveal-delay-1{transition-delay:.12s;}
+  .reveal-delay-2{transition-delay:.24s;}
+  .reveal-delay-3{transition-delay:.36s;}
+
+  /* ---------- trail spine ---------- */
+  #trail-wrap{
+    position:fixed;
+    left:32px;top:0;
+    height:100vh;
+    width:40px;
+    z-index:50;
+    pointer-events:none;
+    display:flex;
+    align-items:center;
+  }
+  #trail-svg{height:78vh;width:40px;overflow:visible;}
+  #trail-path-bg{fill:none;stroke:rgba(242,234,214,0.12);stroke-width:2;stroke-linecap:round;}
+  #trail-path-fg{fill:none;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:2000;stroke-dashoffset:2000;filter:drop-shadow(0 0 4px rgba(227,166,62,.6));}
+  #trail-marker{
+    position:absolute;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--gold);
+    box-shadow:0 0 10px 3px rgba(227,166,62,.7);
+    top:0;left:0;
+    transform:translate(-50%,-50%);
+  }
+  @media (max-width:900px){ #trail-wrap{display:none;} }
+
+  /* ---------- nav ---------- */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:60;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:24px 5vw;
+    mix-blend-mode:difference;
+  }
+  .nav-mark{font-family:'Fraunces',serif;font-weight:600;font-size:1.05rem;letter-spacing:.02em;}
+  .nav-links{display:flex;gap:28px;font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;}
+  .nav-links a{text-decoration:none;opacity:.75;transition:opacity .25s;}
+  .nav-links a:hover{opacity:1;}
+  @media (max-width:700px){.nav-links{display:none;}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    overflow:hidden;
+    background:
+      radial-gradient(ellipse 120% 60% at 50% 0%, #1b3d2b 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-deep) 0%, #0a1710 100%);
+  }
+  .sky-glow{
+    position:absolute; inset:0;
+    background: radial-gradient(circle at 72% 18%, rgba(227,166,62,.35), transparent 40%);
+    pointer-events:none;
+  }
+  .mountains{position:absolute;bottom:0;left:0;width:100%;height:70%;}
+  .mtn{position:absolute;bottom:0;width:100%;left:0;}
+  .stars{position:absolute;inset:0;}
+  .star{position:absolute;background:var(--cream);border-radius:50%;opacity:.5;animation:twinkle 4s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.7;}}
+
+  .leaf-particle{
+    position:absolute;
+    top:-40px;
+    font-size:1.2rem;
+    opacity:.55;
+    animation-name:fall;
+    animation-timing-function:linear;
+    animation-iteration-count:infinite;
+    color:var(--leaf);
+    user-select:none;
+  }
+  @keyframes fall{
+    0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:0;}
+    10%{opacity:.6;}
+    100%{transform:translateY(110vh) translateX(40px) rotate(340deg);opacity:0;}
+  }
+
+  .hero-inner{
+    position:relative;z-index:5;
+    padding:0 5vw 8vw;
+    max-width:1100px;
+  }
+  .hero-eyebrow{margin-bottom:22px;}
+  .hero h1{
+    font-size:clamp(2.6rem, 8vw, 6.4rem);
+    line-height:0.98;
+    color:var(--cream);
+  }
+  .hero h1 em{
+    font-style:italic;
+    font-weight:400;
+    color:var(--gold);
+  }
+  .hero-sub{
+    max-width:520px;
+    margin-top:28px;
+    font-size:1.05rem;
+    line-height:1.6;
+    color:var(--mist);
+    font-weight:300;
+  }
+  .hero-scroll{
+    margin-top:56px;
+    display:flex;align-items:center;gap:12px;
+    font-family:'Space Mono',monospace;
+    font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--mist);
+  }
+  .scroll-line{width:1px;height:38px;background:linear-gradient(var(--gold), transparent);animation:scrollpulse 1.8s ease-in-out infinite;}
+  @keyframes scrollpulse{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.5);}}
+
+  /* ---------- section shell ---------- */
+  section{position:relative;padding:140px 5vw;max-width:1200px;margin:0 auto;}
+  section.tight{padding-top:80px;}
+  .section-head{margin-bottom:64px;max-width:640px;}
+  .section-head h2{font-size:clamp(2rem,4vw,3.2rem);margin-top:14px;}
+
+  /* ---------- about ---------- */
+  .about{display:grid;grid-template-columns:280px 1fr;gap:64px;align-items:start;}
+  @media (max-width:800px){.about{grid-template-columns:1fr;}}
+  .portrait-wrap{position:relative;}
+  .portrait{
+    width:100%;aspect-ratio:1/1.15;
+    border-radius:6px;
+    object-fit:cover;
+    filter: sepia(.12) saturate(1.1);
+    border:1px solid var(--line);
+  }
+  .portrait-frame{
+    position:absolute;inset:-14px;
+    border:1px solid var(--gold);
+    border-radius:6px;
+    opacity:.5;
+    pointer-events:none;
+  }
+  .about-text p{
+    font-size:1.15rem;
+    line-height:1.85;
+    color:var(--mist);
+    font-weight:300;
+    margin-bottom:20px;
+  }
+  .about-text strong{color:var(--cream);font-weight:500;}
+  .stat-row{display:flex;gap:48px;margin-top:44px;flex-wrap:wrap;}
+  .stat b{font-family:'Fraunces',serif;font-size:2.2rem;color:var(--gold);display:block;}
+  .stat span{font-size:.78rem;letter-spacing:.06em;color:var(--mist);font-family:'Space Mono',monospace;}
+
+  /* ---------- experience / trail stops ---------- */
+  .exp-list{position:relative;}
+  .exp-item{
+    display:grid;
+    grid-template-columns:140px 1fr;
+    gap:36px;
+    padding:40px 0;
+    border-top:1px solid var(--line);
+    position:relative;
+  }
+  .exp-item:last-child{border-bottom:1px solid var(--line);}
+  .exp-item::before{
+    content:"";
+    position:absolute;
+    left:130px;top:44px;
+    width:11px;height:11px;
+    border-radius:50%;
+    background:var(--bg-deep);
+    border:2px solid var(--gold);
+  }
+  @media (max-width:700px){
+    .exp-item{grid-template-columns:1fr;gap:14px;}
+    .exp-item::before{display:none;}
+  }
+  .exp-date{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--gold);letter-spacing:.04em;padding-top:4px;}
+  .exp-role{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:4px;}
+  .exp-org{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--mist);text-transform:uppercase;letter-spacing:.08em;margin-bottom:18px;display:block;}
+  .exp-item ul{list-style:none;}
+  .exp-item li{
+    position:relative;
+    padding-left:20px;
+    margin-bottom:10px;
+    color:var(--mist);
+    font-weight:300;
+    line-height:1.6;
+    font-size:.98rem;
+  }
+  .exp-item li::before{
+    content:"◦";
+    position:absolute;left:0;top:0;
+    color:var(--leaf);
+  }
+
+  /* ---------- tools / gear ---------- */
+  .gear-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .gear-item{
+    background:var(--bg-deep);
+    padding:30px 22px;
+    transition:background .3s, transform .3s;
+    cursor:default;
+  }
+  .gear-item:hover{background:var(--bg-mid);transform:translateY(-3px);}
+  .gear-item span{
+    display:block;
+    font-family:'Space Mono',monospace;
+    font-size:.66rem;
+    color:var(--gold);
+    letter-spacing:.1em;
+    margin-bottom:10px;
+  }
+  .gear-item b{font-family:'Fraunces',serif;font-weight:500;font-size:1.15rem;}
+
+
+  /* ---------- education / languages ---------- */
+  .basecamp{display:grid;grid-template-columns:1fr 1fr;gap:60px;}
+  @media (max-width:700px){.basecamp{grid-template-columns:1fr;}}
+  .bc-block h3{font-size:1rem;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:24px;font-weight:400;}
+  .edu-entry{margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--line);}
+  .edu-entry:last-child{border:none;}
+  .edu-entry b{font-family:'Fraunces',serif;font-size:1.2rem;display:block;}
+  .edu-entry span{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--mist);}
+  .lang-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line);font-weight:300;}
+  .lang-row:last-child{border:none;}
+  .lang-level{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--leaf);text-transform:uppercase;}
+
+  /* ---------- contact / trailhead ---------- */
+  .trailhead{
+    position:relative;
+    background:radial-gradient(ellipse 100% 80% at 50% 100%, #1f4231 0%, var(--bg-deep) 65%);
+    padding:160px 5vw 90px;
+    margin-top:60px;
+    overflow:hidden;
+  }
+  .signpost{
+    text-align:center;
+    max-width:640px;
+    margin:0 auto 70px;
+  }
+  .signpost h2{font-size:clamp(2.4rem,6vw,4.4rem);}
+  .signpost p{color:var(--mist);font-weight:300;margin-top:18px;font-size:1.05rem;}
+
+  .contact-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    max-width:960px;
+    margin:0 auto;
+  }
+  .contact-card{
+    background:var(--bg-deep);
+    padding:34px 26px;
+    text-decoration:none;
+    display:block;
+    transition:background .3s;
+  }
+  .contact-card:hover{background:var(--bg-mid);}
+  .contact-card span{display:block;font-family:'Space Mono',monospace;font-size:.66rem;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;}
+  .contact-card b{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:500;word-break:break-word;}
+
+  footer{
+    text-align:center;
+    padding:50px 5vw 40px;
+    font-family:'Space Mono',monospace;
+    font-size:.7rem;
+    color:var(--mist);
+    letter-spacing:.05em;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div id="trail-wrap">
+  <svg id="trail-svg" viewBox="0 0 40 1000" preserveAspectRatio="none">
+    <path id="trail-path-bg" d="M20,0 C4,120 36,220 20,340 C4,460 36,560 20,680 C4,800 36,880 20,1000"/>
+    <path id="trail-path-fg" d="M20,0 C4,120 36,220 20,340 C4,460 36,560 20,680 C4,800 36,880 20,1000"/>
+  </svg>
+</div>
+
+<nav>
+  <div class="nav-mark">L.G.M.S</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#work">Work</a>
+    <a href="#tools">Tools</a>
+    <a href="#reels">Reels</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="sky-glow"></div>
+  <div class="stars" id="stars"></div>
+  <svg class="mountains" viewBox="0 0 1600 700" preserveAspectRatio="none">
+    <path class="mtn" fill="#132a1f" d="M0,700 L0,420 L220,260 L420,400 L640,220 L900,420 L1120,300 L1320,440 L1600,300 L1600,700 Z"/>
+    <path class="mtn" fill="#173c2b" d="M0,700 L0,500 L160,420 L360,520 L520,380 L760,520 L980,400 L1200,540 L1400,440 L1600,540 L1600,700 Z"/>
+    <path class="mtn" fill="#1f4a34" d="M0,700 L0,600 L200,540 L440,620 L680,530 L940,630 L1180,560 L1400,640 L1600,590 L1600,700 Z"/>
+  </svg>
+  <div id="leaves"></div>
+  <div class="hero-inner">
+    <div class="eyebrow hero-eyebrow reveal">Video Editor · Bangalore</div>
+    <h1 class="reveal reveal-delay-1">Stories carried<br>on the <em>trail.</em></h1>
+    <p class="hero-sub reveal reveal-delay-2">I'm Lakshmesh Gowda M S — I cut footage from mountains, campfires and city streets into films that make people want to go outside. Adventure, education and brand stories, edited with a little bit of dirt still under the fingernails.</p>
+    <div class="hero-scroll reveal reveal-delay-3"><div class="scroll-line"></div>Follow the trail down</div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about">
+    <div class="portrait-wrap reveal">
+      <img class="portrait" src="/Users/lakshmesh/Desktop/profil/lakshmesh-portfolio/images1/photo.png" />
+      <div class="portrait-frame"></div>
+    </div>
+    <div class="about-text">
+      <div class="eyebrow reveal">Profile</div>
+      <h2 class="reveal" style="margin:16px 0 26px;font-size:clamp(1.8rem,3vw,2.6rem);">Detail-obsessed in the edit bay, always chasing the next ridge line.</h2>
+      <p class="reveal reveal-delay-1"><strong>Creative and detail-oriented video editor</strong> with hands-on experience across cinematography, storytelling and post-production. I build engaging educational and promotional content that inspires learning and delivers real visual impact — whether that's a trekking reel from the Western Ghats or a highlight film from a college fest.</p>
+      <p class="reveal reveal-delay-2">Currently pursuing an <strong>M.Tech in Computer Science</strong>, pairing a technical mind with a storyteller's eye — which is probably why my timelines are as organised as my footage folders.</p>
+      <div class="stat-row reveal reveal-delay-3">
+        <div class="stat"><b>5+</b><span>ROLES HELD</span></div>
+        <div class="stat"><b>10+</b><span>SKILLS &amp; TOOLS</span></div>
+        <div class="stat"><b>3</b><span>LANGUAGES FLUENT</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section id="work" class="tight">
+  <div class="section-head reveal">
+    <div class="eyebrow">Work Experience</div>
+    <h2>Checkpoints along the way</h2>
+  </div>
+  <div class="exp-list">
+    <div class="exp-item reveal">
+      <div class="exp-date">2023 — 2025</div>
+      <div>
+        <div class="exp-role">Social Media Head &amp; Media Team Head</div>
+        <span class="exp-org">RR Institutions, Bangalore</span>
+        <ul>
+          <li>Led the college media and social media team, managing event coverage, promotional video production and online campaigns.</li>
+          <li>Directed, shot and edited short films, college fest highlight videos and educational content.</li>
+          <li>Handled official social pages, growing engagement and reach through creative video storytelling.</li>
+          <li>Mentored junior team members in editing, filming and social media management.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="exp-item reveal">
+      <div class="exp-date">2024-2025</div>
+      <div>
+        <div class="exp-role">Content Creator</div>
+        <span class="exp-org">Freelancer, Bangalore</span>
+        <ul>
+          <li>Created visually stunning travel and adventure videos highlighting Karnataka's trekking destinations.</li>
+          <li>Captured and edited short-form content — reels, vlogs and stories — to promote eco-tourism and community experiences.</li>
+          <li>Developed storytelling-focused edits showcasing nature, culture and adventure.</li>
+          <li>Contributed to multiple organisations growing their online presence through creative campaigns and media collaborations.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="exp-item reveal">
+      <div class="exp-date">2025-2026</div>
+      <div>
+        <div class="exp-role">Video Editor</div>
+        <span class="exp-org">NGO, Bangalore</span>
+        <ul>
+          <li>Produced and edited engaging reels, videos and social content for youth-focused outdoor programs and camps.</li>
+          <li>Created storytelling-driven content showcasing adventure activities, outdoor education and experiential learning.</li>
+          <li>Captured event photography and videography to enhance audience engagement and brand visibility.</li>
+          <li>Collaborated with program teams to develop content aligned with the NGO's mission and outreach initiatives.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="section-head reveal">
+    <div class="eyebrow">Tools of the Trade</div>
+    <h2>What's in the pack</h2>
+  </div>
+  <div class="gear-grid reveal">
+    <div class="gear-item"><span>EDIT</span><b>DaVinci Resolve</b></div>
+    <div class="gear-item"><span>EDIT</span><b>VN</b></div>
+    <div class="gear-item"><span>EDIT</span><b>CapCut</b></div>
+    <div class="gear-item"><span>MOTION</span><b>After Effects</b></div>
+    <div class="gear-item"><span>AUDIO</span><b>Sound Design</b></div>
+    <div class="gear-item"><span>DESIGN</span><b>Photoshop</b></div>
+    <div class="gear-item"><span>DESIGN</span><b>Canva</b></div>
+    <div class="gear-item"><span>GROWTH</span><b>Content Creation</b></div>
+    <div class="gear-item"><span>GROWTH</span><b>Digital Marketing</b></div>
+    <div class="gear-item"><span>GROWTH</span><b>SEO</b></div>
+  </div>
+</section>
+
+<!-- EDUCATION / LANGUAGES -->
+<section id="basecamp-section">
+  <div class="section-head reveal">
+    <div class="eyebrow">Basecamp</div>
+    <h2>Education &amp; languages</h2>
+  </div>
+  <div class="basecamp reveal">
+    <div class="bc-block">
+      <h3>Education</h3>
+      <div class="edu-entry">
+        <b>M.Tech, Computer Science</b>
+        <span>2025 — Present</span>
+      </div>
+      <div class="edu-entry">
+        <b>B.Tech, Computer Science</b>
+        <span>2022 — 2025</span>
+      </div>
+    </div>
+    <div class="bc-block">
+      <h3>Languages</h3>
+      <div class="lang-row">English <span class="lang-level">Fluent</span></div>
+      <div class="lang-row">Kannada <span class="lang-level">Fluent</span></div>
+      <div class="lang-row">Hindi <span class="lang-level">Fluent</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" style="padding:0;max-width:none;">
+  <div class="trailhead">
+    <div class="signpost reveal">
+      <div class="eyebrow" style="justify-content:center;">Trailhead</div>
+      <h2 style="margin-top:16px;">Let's cut something together.</h2>
+      <p>Got a story that needs shaping — a trek, a campaign, a campus film? Reach out and let's plan the route.</p>
+    </div>
+    <div class="contact-grid reveal">
+      <a class="contact-card" href="tel:7760508147"><span>Phone</span><b>+91 77605 08147</b></a>
+      <a class="contact-card" href="mailto:laksh17036@gmail.com"><span>Email</span><b>laksh17036@gmail.com</b></a>
+      <a class="contact-card" href="https://www.instagram.com/lakshmesh_gowdaa?igsh=MWh5cmpseW4xZWczZA%3D%3D&utm_source=qr" target="_blank" rel="noopener"><span>Instagram</span><b>@lakshmesh_gowdaa</b></a>
+      <a class="contact-card" href="https://www.linkedin.com/in/lakshmesh-gowda-2b8656221/?skipRedirect=true" target="_blank" rel="noopener"><span>LinkedIn</span><b>Lakshmesh</b></a>
+      <a class="contact-card" href="#" onclick="return false;"><span>Based in</span><b>Bangalore, India</b></a>
+    </div>
+  </div>
+  <footer>© 2026 Lakshmesh Gowda M S — Designed by Infynex</footer>
+</section>
+
+<script>
+// stars
+const starsWrap = document.getElementById('stars');
+for(let i=0;i<40;i++){
+  const s = document.createElement('div');
+  s.className='star';
+  const size = Math.random()*2+1;
+  s.style.width = s.style.height = size+'px';
+  s.style.left = Math.random()*100+'%';
+  s.style.top = Math.random()*45+'%';
+  s.style.animationDelay = (Math.random()*4)+'s';
+  starsWrap.appendChild(s);
+}
+
+// falling leaves
+const leavesWrap = document.getElementById('leaves');
+const leafChars = ['🍃','❋','·'];
+for(let i=0;i<14;i++){
+  const l = document.createElement('div');
+  l.className='leaf-particle';
+  l.textContent = leafChars[Math.floor(Math.random()*leafChars.length)];
+  l.style.left = Math.random()*100+'%';
+  const dur = 10+Math.random()*10;
+  l.style.animationDuration = dur+'s';
+  l.style.animationDelay = (Math.random()*dur)+'s';
+  l.style.fontSize = (0.8+Math.random()*0.8)+'rem';
+  leavesWrap.appendChild(l);
+}
+
+// scroll reveal
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+  });
+},{threshold:0.15});
+revealEls.forEach(el=>io.observe(el));
+
+// trail progress
+const fg = document.getElementById('trail-path-fg');
+const len = fg.getTotalLength();
+fg.style.strokeDasharray = len;
+fg.style.strokeDashoffset = len;
+function updateTrail(){
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = Math.min(scrollTop/docHeight, 1);
+  fg.style.strokeDashoffset = len - (len*progress);
+}
+window.addEventListener('scroll', updateTrail);
+updateTrail();
+
+// hero parallax on mouse
+const heroInner = document.querySelector('.hero-inner');
+const mountains = document.querySelectorAll('.mtn');
+document.querySelector('.hero').addEventListener('mousemove', (e)=>{
+  const x = (e.clientX/window.innerWidth - 0.5);
+  const y = (e.clientY/window.innerHeight - 0.5);
+  mountains.forEach((m,i)=>{
+    const depth = (i+1)*6;
+    m.style.transform = `translate(${x*depth}px, ${y*depth*0.4}px)`;
+  });
+});
+</script>
+</body>
+</html>
